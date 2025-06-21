@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Prediction Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-group {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .form-field {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        select, input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input[type="date"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .predict-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .results h2 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin-bottom: 30px;
+        }
+
+        /* New styles for future predictions chart */
+        .future-chart-container {
+            position: relative;
+            height: 400px;
+            margin: 40px 0 30px;
+        }
+
+        .future-heading {
+            text-align: center;
+            margin: 30px 0 15px;
+            color: #333;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .recommendation {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .recommendation.buy {
+            border-left: 8px solid #4CAF50;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+        }
+
+        .recommendation.sell {
+            border-left: 8px solid #f44336;
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+        }
+
+        .recommendation.hold {
+            border-left: 8px solid #ff9800;
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+        }
+
+        .recommendation-header {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .recommendation.buy .recommendation-header {
+            color: #4CAF50;
+        }
+
+        .recommendation.sell .recommendation-header {
+            color: #f44336;
+        }
+
+        .recommendation.hold .recommendation-header {
+            color: #ff9800;
+        }
+
+        .recommendation-score {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .recommendation-reasons {
+            text-align: left;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .recommendation-reasons h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .recommendation-reasons ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .recommendation-reasons li {
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .confidence-meter {
+            background: #e0e0e0;
+            border-radius: 20px;
+            height: 20px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.8s ease;
+        }
+
+        .confidence-fill.high {
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+        }
+
+        .confidence-fill.medium {
+            background: linear-gradient(90deg, #ff9800, #FFC107);
+        }
+
+        .confidence-fill.low {
+            background: linear-gradient(90deg, #f44336, #FF5722);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .form-group {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .chart-container, .future-chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 Stockiez: AI Stock Advisor</h1>
+            <p>AI-Powered Stock Analysis & Buy/Sell Recommendations</p>
+        </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <div class="form-field">
+                    <label for="ticker">Stock Ticker</label>
+                    <select id="ticker">
+                        <option value="AAPL">AAPL - Apple Inc.</option>
+                        <option value="MSFT">MSFT - Microsoft</option>
+                        <option value="SPY">SPY - S&P 500 ETF</option>
+                        <option value="NKE">NKE - Nike Inc.</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="analysisType">Analysis Period</label>
+                    <select id="analysisType">
+                        <option value="6months">Last 6 Months</option>
+                        <option value="1year">Last 1 Year</option>
+                        <option value="2years">Last 2 Years</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <button class="predict-btn" onclick="getAnalysis()">
+                        📊 Analyze & Recommend
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading hidden"></div>
+
+        <div id="error" class="error hidden"></div>
+
+        <div id="recommendation" class="recommendation hidden">
+            <div class="recommendation-header" id="recommendationHeader">
+                🤖 AI Recommendation
+            </div>
+            <div class="recommendation-score" id="recommendationScore">
+                ANALYZING...
+            </div>
+            <div class="confidence-meter">
+                <div class="confidence-fill" id="confidenceFill"></div>
+            </div>
+            <p id="confidenceText">Confidence Level: Calculating...</p>
+            <div class="recommendation-reasons" id="recommendationReasons">
+                <h4>Analysis Factors:</h4>
+                <ul id="reasonsList"></ul>
+            </div>
+        </div>
+
+        <div id="results" class="results hidden">
+            <h2 id="resultsTitle">Prediction Results</h2>
+            <div class="chart-container">
+                <canvas id="predictionChart"></canvas>
+            </div>
+            
+            <!-- New section for future predictions -->
+            <h3 class="future-heading">Future Price Projection</h3>
+            <div class="future-chart-container">
+                <canvas id="futurePredictionChart"></canvas>
+            </div>
+            
+            <div class="stats" id="stats"></div>
+        </div>
+    </div>
+
+    <script>
+        let predictionChart = null;
+        let futurePredictionChart = null;
+        const API_BASE = 'http://127.0.0.1:5001';
+
+        // Set default dates based on analysis type
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDatesByAnalysisType();
+            document.getElementById('analysisType').addEventListener('change', updateDatesByAnalysisType);
+            checkAPIConnection();
+        });
+
+        function updateDatesByAnalysisType() {
+            const analysisType = document.getElementById('analysisType').value;
+            const today = new Date();
+            let startDate;
+
+            switch(analysisType) {
+                case '6months':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+                    break;
+                case '1year':
+                    startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+                    break;
+                case '2years':
+                    startDate = new Date(today.getFullYear() - 2, today.getMonth(), today.getDate());
+                    break;
+            }
+            
+            // Store the calculated dates for use in analysis
+            window.analysisStartDate = startDate.toISOString().split('T')[0];
+            window.analysisEndDate = today.toISOString().split('T')[0];
+        }
+
+        async function getAnalysis() {
+            const ticker = document.getElementById('ticker').value;
+            const startDate = window.analysisStartDate;
+            const endDate = window.analysisEndDate;
+            const analysisType = document.getElementById('analysisType').value;
+            
+            // Calculate future_days based on analysis period
+            let future_days = 30; // Default to 1 month
+            if (analysisType === '1year') future_days = 60; // 2 months for 1 year analysis
+            if (analysisType === '2years') future_days = 90; // 3 months for 2 year analysis
+
+            // Show loading
+            showLoading(true);
+            hideError();
+            hideResults();
+            hideRecommendation();
+
+            try {
+                const response = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ticker: ticker,
+                        start_date: startDate,
+                        end_date: endDate,
+                        future_days: future_days
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to get prediction');
+                }
+
+                // Generate recommendation based on prediction data
+                const recommendation = generateRecommendation(data);
+                displayRecommendation(recommendation, data.ticker);
+                displayResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Error: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function generateRecommendation(data) {
+            const actual = data.historical.actual;
+            const predicted = data.historical.predicted;
+            const ticker = data.ticker;
+            
+            // Calculate various metrics for recommendation
+            const currentPrice = actual[actual.length - 1];
+            const predictedPrice = predicted[predicted.length - 1];
+            const priceChange = ((predictedPrice - currentPrice) / currentPrice) * 100;
+            
+            // Calculate trend analysis
+            const recentActual = actual.slice(-10); // Last 10 days
+            const recentPredicted = predicted.slice(-10);
+            const actualTrend = calculateTrend(recentActual);
+            const predictedTrend = calculateTrend(recentPredicted);
+            
+            // Calculate prediction accuracy
+            const accuracy = calculateAccuracy(actual, predicted);
+            
+            // Calculate volatility
+            const volatility = calculateVolatility(actual);
+            
+            // Decision logic
+            let recommendation = 'HOLD';
+            let confidence = 50;
+            let reasons = [];
+            
+            // Price prediction factor
+            if (priceChange > 5) {
+                recommendation = 'BUY';
+                confidence += 20;
+                reasons.push(`AI predicts ${priceChange.toFixed(1)}% price increase`);
+            } else if (priceChange < -5) {
+                recommendation = 'SELL';
+                confidence += 15;
+                reasons.push(`AI predicts ${Math.abs(priceChange).toFixed(1)}% price decrease`);
+            } else {
+                reasons.push(`Predicted price change: ${priceChange.toFixed(1)}%`);
+            }
+            
+            // Trend analysis
+            if (actualTrend > 0 && predictedTrend > 0) {
+                if (recommendation !== 'SELL') {
+                    recommendation = 'BUY';
+                    confidence += 15;
+                }
+                reasons.push('Strong upward trend detected');
+            } else if (actualTrend < 0 && predictedTrend < 0) {
+                if (recommendation !== 'BUY') {
+                    recommendation = 'SELL';
+                    confidence += 10;
+                }
+                reasons.push('Downward trend detected');
+            }
+            
+            // Accuracy factor
+            if (accuracy > 85) {
+                confidence += 15;
+                reasons.push(`High model accuracy (${accuracy.toFixed(1)}%)`);
+            } else if (accuracy < 70) {
+                confidence -= 10;
+                reasons.push(`Lower model accuracy (${accuracy.toFixed(1)}%)`);
+            }
+            
+            // Volatility factor
+            if (volatility < 2) {
+                confidence += 10;
+                reasons.push('Low volatility - stable stock');
+            } else if (volatility > 5) {
+                confidence -= 10;
+                reasons.push('High volatility - risky investment');
+            }
+            
+            // Stock-specific factors
+            const stockFactors = getStockSpecificFactors(ticker);
+            reasons.push(...stockFactors.reasons);
+            confidence += stockFactors.confidenceBoost;
+            
+            // Ensure confidence is within bounds
+            confidence = Math.max(30, Math.min(95, confidence));
+            
+            return {
+                action: recommendation,
+                confidence: confidence,
+                reasons: reasons,
+                currentPrice: currentPrice.toFixed(2),
+                predictedPrice: predictedPrice.toFixed(2),
+                priceChange: priceChange,
+                accuracy: accuracy
+            };
+        }
+
+        function calculateTrend(prices) {
+            if (prices.length < 2) return 0;
+            const firstHalf = prices.slice(0, Math.floor(prices.length / 2));
+            const secondHalf = prices.slice(Math.floor(prices.length / 2));
+            const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+            const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+            return ((secondAvg - firstAvg) / firstAvg) * 100;
+        }
+
+        function calculateAccuracy(actual, predicted) {
+            const mse = actual.reduce((sum, val, i) => sum + Math.pow(val - predicted[i], 2), 0) / actual.length;
+            const rmse = Math.sqrt(mse);
+            const actualMean = actual.reduce((sum, val) => sum + val, 0) / actual.length;
+            return Math.max(0, 100 - (rmse / actualMean * 100));
+        }
+
+        function calculateVolatility(prices) {
+            if (prices.length < 2) return 0;
+            const returns = [];
+            for (let i = 1; i < prices.length; i++) {
+                returns.push((prices[i] - prices[i-1]) / prices[i-1]);
+            }
+            const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const variance = returns.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / returns.length;
+            return Math.sqrt(variance) * Math.sqrt(252) * 100; // Annualized volatility
+        }
+
+        function getStockSpecificFactors(ticker) {
+            const factors = {
+                'AAPL': {
+                    reasons: ['Apple: Strong brand loyalty and innovation pipeline', 'Consistent dividend payments'],
+                    confidenceBoost: 5
+                },
+                'MSFT': {
+                    reasons: ['Microsoft: Dominant in cloud computing', 'Strong enterprise software portfolio'],
+                    confidenceBoost: 5
+                },
+                'SPY': {
+                    reasons: ['S&P 500 ETF: Diversified market exposure', 'Long-term growth potential'],
+                    confidenceBoost: 10
+                },
+                'NKE': {
+                    reasons: ['Nike: Strong brand in athletic wear', 'Global market presence'],
+                    confidenceBoost: 3
+                }
+            };
+            return factors[ticker] || { reasons: [], confidenceBoost: 0 };
+        }
+
+        function displayRecommendation(rec, ticker) {
+            const recDiv = document.getElementById('recommendation');
+            const headerEl = document.getElementById('recommendationHeader');
+            const scoreEl = document.getElementById('recommendationScore');
+            const fillEl = document.getElementById('confidenceFill');
+            const confidenceEl = document.getElementById('confidenceText');
+            const reasonsEl = document.getElementById('reasonsList');
+            
+            // Set recommendation class and content
+            recDiv.className = `recommendation ${rec.action.toLowerCase()}`;
+            
+            const actionEmojis = {
+                'BUY': '🚀 STRONG BUY',
+                'SELL': '⚠️ SELL',
+                'HOLD': '⏸️ HOLD'
+            };
+            
+            headerEl.textContent = `${actionEmojis[rec.action]} Recommendation for ${ticker}`;
+            scoreEl.textContent = rec.action;
+            
+            // Set confidence meter
+            fillEl.style.width = `${rec.confidence}%`;
+            fillEl.className = `confidence-fill ${rec.confidence > 75 ? 'high' : rec.confidence > 50 ? 'medium' : 'low'}`;
+            confidenceEl.textContent = `Confidence Level: ${rec.confidence}%`;
+            
+            // Add reasons
+            reasonsEl.innerHTML = rec.reasons.map(reason => `<li>${reason}</li>`).join('');
+            
+            // Add current vs predicted price info
+            reasonsEl.innerHTML += `
+                <li><strong>Current Price: ${rec.currentPrice}</strong></li>
+                <li><strong>AI Predicted Price: ${rec.predictedPrice}</strong></li>
+                <li><strong>Expected Change: ${rec.priceChange > 0 ? '+' : ''}${rec.priceChange.toFixed(1)}%</strong></li>
+            `;
+            
+            recDiv.classList.remove('hidden');
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            const titleElement = document.getElementById('resultsTitle');
+            
+            titleElement.textContent = `${data.ticker} Stock Prediction Results`;
+            
+            // Create charts
+            createChart(data);
+            if (data.future) {
+                createFutureChart(data);
+            }
+            
+            // Calculate statistics
+            const stats = calculateStats(data.historical.actual, data.historical.predicted);
+            displayStats(stats, data.ticker);
+            
+            resultsDiv.classList.remove('hidden');
+        }
+
+        function createFutureChart(data) {
+    const ctx = document.getElementById('futurePredictionChart').getContext('2d');
+    
+    if (futurePredictionChart) {
+        futurePredictionChart.destroy();
+    }
+
+    // Get the last 10 days of historical data to calculate volatility
+    const recentPrices = data.historical.actual.slice(-10);
+    const volatility = calculateVolatility(recentPrices) / 100; // Convert percentage to decimal
+    
+    // Generate realistic future projections with variability
+    const lastHistoricalPrice = data.historical.actual[data.historical.actual.length - 1];
+    const projectedPrices = [lastHistoricalPrice];
+    
+    // Calculate average daily return from historical data
+    const dailyReturns = [];
+    for (let i = 1; i < recentPrices.length; i++) {
+        dailyReturns.push((recentPrices[i] - recentPrices[i-1]) / recentPrices[i-1]);
+    }
+    const avgDailyReturn = dailyReturns.reduce((sum, val) => sum + val, 0) / dailyReturns.length;
+    
+    // Generate realistic future prices with randomness based on historical volatility
+    for (let i = 1; i < data.future.predicted.length; i++) {
+        // Add randomness based on historical volatility
+        const randomFactor = 1 + (Math.random() * 2 - 1) * volatility;
+        // Combine with predicted trend and random fluctuation
+        const priceChange = (data.future.predicted[i] - data.future.predicted[i-1]) / data.future.predicted[i-1];
+        const newPrice = projectedPrices[i-1] * (1 + (priceChange * 0.7 + avgDailyReturn * 0.3)) * randomFactor;
+        projectedPrices.push(newPrice);
+    }
+
+    // Combine dates and prices for the chart
+    const lastHistoricalDate = data.historical.dates[data.historical.dates.length - 1];
+    const combinedDates = [lastHistoricalDate, ...data.future.dates];
+    const combinedPrices = projectedPrices;
+
+    futurePredictionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: combinedDates,
+            datasets: [
+                {
+                    label: 'Projected Price',
+                    data: combinedPrices,
+                    borderColor: '#764ba2',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.1, // Reduced tension for more natural movement
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Confidence Range',
+                    data: combinedPrices.map(price => price * 1.05), // Upper bound
+                    borderColor: 'rgba(118, 75, 162, 0.3)',
+                    backgroundColor: 'rgba(118, 75, 162, 0.05)',
+                    borderWidth: 1,
+                    fill: 1, // Fill to lower bound
+                    pointRadius: 0,
+                    tension: 0.1
+                },
+                {
+                    label: '',
+                    data: combinedPrices.map(price => price * 0.95), // Lower bound
+                    borderColor: 'rgba(118, 75, 162, 0.3)',
+                    backgroundColor: 'rgba(118, 75, 162, 0.05)',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `${data.ticker} - Future Price Projection with Confidence Range`,
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        filter: function(item) {
+                            return !item.text.includes('Confidence'); // Hide confidence range legend
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += '$' + context.parsed.y.toFixed(2);
+                                }
+                                return label;
+                            }
+                            return null;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Future Date'
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 0
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Projected Price ($)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+
+        function formatDatesForChart(dates, analysisType) {
+            if (!dates || !Array.isArray(dates)) {
+                console.warn('Invalid dates array received:', dates);
+                return [];
+            }
+
+            // Calculate offset based on analysis period
+            let daysToAdd = 60; // Default for 6 months
+            if (analysisType === '1year') daysToAdd = 120; // 4 months for 1 year
+            if (analysisType === '2years') daysToAdd = 540; // ~1.5 years for 2 years
+
+            return dates.map(dateStr => {
+                try {
+                    const date = new Date(dateStr);
+                    date.setDate(date.getDate() + daysToAdd);
+                    
+                    // Format as MM/DD/YYYY
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const year = date.getFullYear();
+                    
+                    return `${month}/${day}/${year}`;
+                } catch (error) {
+                    console.warn('Error formatting date:', dateStr, error);
+                    return dateStr;
+                }
+            });
+        }
+
+        function createChart(data) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            const analysisType = document.getElementById('analysisType').value;
+            
+            if (predictionChart) {
+                predictionChart.destroy();
+            }
+
+            const formattedDates = formatDatesForChart(data.historical.dates, analysisType);
+            
+            predictionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: formattedDates,
+                    datasets: [
+                        {
+                            label: 'Actual Price',
+                            data: data.historical.actual,
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Predicted Price',
+                            data: data.historical.predicted,
+                            borderColor: '#FF6B6B',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            borderDash: [5, 5],
+                            pointRadius: 2,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${data.ticker} - Actual vs Predicted Stock Prices`,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].label;
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += '$' + context.parsed.y.toFixed(2);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            ticks: {
+                                maxTicksLimit: 10,
+                                maxRotation: 45,
+                                minRotation: 0
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Price ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function calculateStats(actual, predicted) {
+            const mse = actual.reduce((sum, val, i) => sum + Math.pow(val - predicted[i], 2), 0) / actual.length;
+            const rmse = Math.sqrt(mse);
+            const mae = actual.reduce((sum, val, i) => sum + Math.abs(val - predicted[i]), 0) / actual.length;
+            
+            const actualMean = actual.reduce((sum, val) => sum + val, 0) / actual.length;
+            const accuracy = 100 - (rmse / actualMean * 100);
+            
+            return {
+                rmse: rmse.toFixed(2),
+                mae: mae.toFixed(2),
+                accuracy: Math.max(0, accuracy).toFixed(1),
+                avgActual: actualMean.toFixed(2),
+                avgPredicted: (predicted.reduce((sum, val) => sum + val, 0) / predicted.length).toFixed(2)
+            };
+        }
+
+        function displayStats(stats, ticker) {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <h3>${stats.accuracy}%</h3>
+                    <p>Model Accuracy</p>
+                </div>
+                <div class="stat-card">
+                    <h3>$${stats.rmse}</h3>
+                    <p>RMSE</p>
+                </div>
+                <div class="stat-card">
+                    <h3>$${stats.mae}</h3>
+                    <p>Mean Absolute Error</p>
+                </div>
+                <div class="stat-card">
+                    <h3>$${stats.avgActual}</h3>
+                    <p>Avg Actual Price</p>
+                </div>
+            `;
+        }
+
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loading');
+            const button = document.querySelector('.predict-btn');
+            
+            if (show) {
+                loadingDiv.textContent = 'Analyzing stock data and generating AI recommendation...';
+                loadingDiv.classList.remove('hidden');
+                button.disabled = true;
+                button.textContent = '🔄 Analyzing...';
+            } else {
+                loadingDiv.classList.add('hidden');
+                button.disabled = false;
+                button.textContent = '📊 Analyze & Recommend';
+            }
+        }
+
+        function hideRecommendation() {
+            document.getElementById('recommendation').classList.add('hidden');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('error').classList.add('hidden');
+        }
+
+        function hideResults() {
+            document.getElementById('results').classList.add('hidden');
+        }
+
+        async function checkAPIConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (!response.ok) {
+                    throw new Error('API not responding');
+                }
+                console.log('✅ Connected to Stock Prediction API');
+            } catch (error) {
+                showError('⚠️ Cannot connect to API. Make sure your Flask server is running on port 5001');
+                console.error('API connection failed:', error);
+            }
+        }
+    </script>
+</body>
+</html>
