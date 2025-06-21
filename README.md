@@ -4,6 +4,8 @@ Welcome to **Stockiez**, a Flask-based web API that predicts stock prices using 
 Powered by **LSTM neural networks**, this API delivers smart, time-series based forecasts for popular tickers like **SPY**, **AAPL**, **MSFT**, and **NKE**.
 
 ---
+<img width="939" alt="image" src="https://github.com/user-attachments/assets/ca5f84f4-f058-453b-b0c9-2df9bdbfb78e" />
+
 
 ## 🔍 Main Features
 
@@ -37,6 +39,8 @@ Powered by **LSTM neural networks**, this API delivers smart, time-series based 
 5. 📄 Denormalized results returned via JSON  
 
 ---
+<img width="891" alt="image" src="https://github.com/user-attachments/assets/68afff18-7d07-4c0f-8051-b635d81f2e61" />
+
 
 ## 🧪 Error Handling & Configs
 
